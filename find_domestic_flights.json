@@ -1,0 +1,54 @@
+{
+  "name": "find_domestic_flights",
+  "description": "Find and present top domestic flight results with airline, price, and departure time.",
+  "strict": true,
+  "parameters": {
+    "type": "object",
+    "required": [
+      "origin",
+      "destination",
+      "departure_date",
+      "return_date",
+      "passengers",
+      "class",
+      "max_results"
+    ],
+    "properties": {
+      "origin": {
+        "type": "string",
+        "description": "IATA airport code or city name for flight origin"
+      },
+      "destination": {
+        "type": "string",
+        "description": "IATA airport code or city name for flight destination"
+      },
+      "departure_date": {
+        "type": "string",
+        "description": "Date of departure in YYYY-MM-DD format"
+      },
+      "return_date": {
+        "type": "string",
+        "description": "Return date in YYYY-MM-DD format, if searching for roundtrip"
+      },
+      "passengers": {
+        "type": "integer",
+        "description": "Number of passengers"
+      },
+      "class": {
+        "type": "string",
+        "description": "Travel class for the flight",
+        "enum": [
+          "economy",
+          "premium_economy",
+          "business",
+          "first"
+        ]
+      },
+      "max_results": {
+        "type": "integer",
+        "description": "Maximum number of top results to present"
+      }
+    },
+    "additionalProperties": false
+  }
+}
