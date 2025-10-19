@@ -1,5 +1,5 @@
 # SmartTrip AI
-An OpenAI-powered travel planning agent that automates trip creation and recommendations.
+An OpenAI-powered travel planning agent that automates flight planning and recommendations.
 
 ## Team Members
 - Owen Eller– Project Manager / Lead
@@ -7,7 +7,7 @@ An OpenAI-powered travel planning agent that automates trip creation and recomme
 - Brielle Picard – API & Data Integrator
 
 ## Goals
-- Automate trip planning.
-- Integrate travel APIs for flights and hotels.
-- Provide customized itineraries using OpenAI.
+- Automate flight planning.
+- Integrate travel search for flights, domestic or international.
+- Provide best flights recommendations using OpenAI.
 
