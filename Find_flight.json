@@ -1,0 +1,37 @@
+{
+  "name": "find_flight",
+  "description": "Finds flights, determines if the trip is domestic or international, and collects missing details such as origin, destination, and date if needed.",
+  "strict": true,
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "origin": {
+        "type": "string",
+        "description": "Departure location, such as airport code, city, or country"
+      },
+      "destination": {
+        "type": "string",
+        "description": "Arrival location, such as airport code, city, or country"
+      },
+      "date": {
+        "type": "string",
+        "description": "Date of departure in YYYY-MM-DD format"
+      },
+      "trip_type": {
+        "type": "string",
+        "description": "Type of trip, either 'domestic' or 'international'",
+        "enum": [
+          "domestic",
+          "international"
+        ]
+      }
+    },
+    "required": [
+      "origin",
+      "destination",
+      "date",
+      "trip_type"
+    ],
+    "additionalProperties": false
+  }
+}
