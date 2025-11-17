@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Flight Planner</title>
+    <title>Smart Trip Flight Planner Agent</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
@@ -132,24 +132,21 @@
     </div>
 
     <script>
-        // === CORE CONFIGURATION ===
-        // !!! IMPORTANT !!!
-        // You MUST replace this URL with the actual Webhook URL from your n8n workflow.
+        
         const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/flight-planner';
         const chatMessages = document.getElementById('chat-messages');
         const form = document.getElementById('flight-form');
         const searchButton = document.getElementById('search-button');
 
-        // NEW FUNCTION: Simple Markdown to HTML Converter
-        // Converts list items (*, -) and bold (**text**) from Markdown to HTML.
+       
         function markdownToHtml(markdown) {
             if (!markdown) return '';
             let html = markdown;
 
-            // 1. Convert bolding (**text**) to <strong>text</strong>
+            
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
-            // 2. Look for list items (* or - followed by a space) and wrap them in <li>
+            
             const listItems = html.split('\n').filter(line => line.trim().match(/^[\*-]\s/));
             
             if (listItems.length > 0) {
@@ -165,7 +162,7 @@
                 return `<ul class="list-disc pl-5">${listHtml}</ul>`;
             }
 
-            // 3. Convert remaining newlines to <br> for simple paragraph breaks
+            
             return html.replace(/\n/g, '<br>');
         }
 
@@ -179,7 +176,7 @@
             }
 
             if (isHtml) {
-                // CRITICAL FIX: Use the markdownToHtml converter for agent results
+                
                 messageDiv.innerHTML = type === 'agent-result' ? markdownToHtml(content) : content;
             } else {
                 messageDiv.textContent = content;
@@ -237,7 +234,7 @@
                     query: userQueryText // Optional: send the full user text
                 };
 
-                // !!! Fetch Call to n8n Webhook !!!
+                
                 const response = await fetch(N8N_WEBHOOK_URL, {
                     method: 'POST',
                     headers: {
@@ -250,14 +247,13 @@
                     throw new Error(`HTTP error! Status: ${response.status}. Check your n8n workflow.`);
                 }
 
-                // Assuming n8n returns a JSON object with a 'message' field (from Gemini)
+                
                 const result = await response.json();
 
                 // 3. Remove loading and display the agent's response
                 removeLoading(loadingIndicator);
 
-                // The result from n8n should contain the combined text output from Gemini,
-                // which summarizes the flight data.
+                
                 if (result && result.message) {
                     // isHtml=true will now correctly trigger the markdownToHtml conversion
                     addMessage('agent-result', result.message, true);
