@@ -9,5 +9,5 @@ An OpenAI-powered travel planning agent that automates flight planning and recom
 ## Goals
 - Automate flight planning.
 - Integrate travel search for flights, domestic or international.
-- Provide best flights recommendations using OpenAI.
+- Provide best flights recommendations using Gemini AI model in n8n enviroment.
 
