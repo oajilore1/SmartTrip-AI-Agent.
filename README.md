@@ -25,9 +25,7 @@ n8n: This is the tool that connects the website, the flight data, and the AI all
 
 Automation: The system runs itself. You type your trip details, and the n8n flow automatically gets the data, filters the JSON, and asks the AI to write the final list.
 
-Goals (Success Metrics): We aim for the whole search to take under 4 seconds, for the AI to follow the clear list format over 95% of the time, and for the AI output to be very small (less than 5% of the original data).
 
-Roles: (Self-Reflect and Fill in the names of the users collaborating on this project.)
 
 🏛️ How It Works (Simple View)
 
