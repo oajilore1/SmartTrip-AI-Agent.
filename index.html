@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Flight Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .chat-container {
+            max-width: 90%;
+            width: 500px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            background-color: white;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            scroll-behavior: smooth;
+        }
+        .user-message {
+            align-self: flex-end;
+            max-width: 80%;
+            background-color: #1a73e8; /* Google Blue */
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+        }
+        .agent-message {
+            align-self: flex-start;
+            max-width: 90%;
+            background-color: #e5e7eb; /* Light Gray */
+            color: #1f2937;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+        }
+        .agent-result {
+            align-self: flex-start; /* Ensure results are agent-aligned */
+            max-width: 90%;
+            background-color: #d1e7fd; /* Light Blue for Results */
+            border-left: 4px solid #1a73e8;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .agent-result strong {
+            color: #1a73e8;
+        }
+        /* Custom scrollbar for aesthetic */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        .chat-messages::-webkit-scrollbar-track {
+            background-color: #f7f9fb;
+        }
+        .input-group label {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            color: #374151;
+        }
+        .input-group input {
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="p-4 bg-gray-50 border-b border-gray-200">
+            <h1 class="text-xl font-bold text-center text-gray-800">✈️ Gemini Flight Agent</h1>
+            <!-- UPDATED to reflect SerpApi / Google Flights source -->
+            <p class="text-xs text-center text-gray-500 mt-1">Powered by n8n, Gemini, and Google Flights (via SerpApi)</p>
+        </div>
+
+        <!-- Chat Messages Area -->
+        <div id="chat-messages" class="chat-messages">
+            <!-- Initial Greeting - UPDATED INSTRUCTION -->
+            <div class="agent-message">
+                Welcome! I'm your AI Flight Agent, powered by Google Flights. Please enter your departure and arrival airport **IATA codes** (e.g., JFK, LAX) and your exact travel date below to find the top 3 flight options.
+            </div>
+            <!-- Dynamic messages will be added here -->
+        </div>
+
+        <!-- Input Form Area -->
+        <div class="p-4 border-t border-gray-200 bg-white">
+            <form id="flight-form" class="space-y-3">
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="input-group">
+                        <label for="origin" class="block text-sm">Origin (IATA, e.g., LAX)</label>
+                        <input type="text" id="origin" name="origin" placeholder="Origin" required class="focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label for="destination" class="block text-sm">Destination (IATA, e.g., JFK)</label>
+                        <input type="text" id="destination" name="destination" placeholder="Destination" required class="focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="input-group">
+                        <label for="date" class="block text-sm">Date</label>
+                        <input type="date" id="date" name="date" required class="focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <button type="submit" id="search-button"
+                    class="w-full py-3 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition duration-150 ease-in-out shadow-lg shadow-green-500/50 focus:outline-none focus:ring-4 focus:ring-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Search Flights
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // === CORE CONFIGURATION ===
+        // !!! IMPORTANT !!!
+        // You MUST replace this URL with the actual Webhook URL from your n8n workflow.
+        const N8N_WEBHOOK_URL = 'http://localhost:5678/webhook/flight-planner';
+        const chatMessages = document.getElementById('chat-messages');
+        const form = document.getElementById('flight-form');
+        const searchButton = document.getElementById('search-button');
+
+        // NEW FUNCTION: Simple Markdown to HTML Converter
+        // Converts list items (*, -) and bold (**text**) from Markdown to HTML.
+        function markdownToHtml(markdown) {
+            if (!markdown) return '';
+            let html = markdown;
+
+            // 1. Convert bolding (**text**) to <strong>text</strong>
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // 2. Look for list items (* or - followed by a space) and wrap them in <li>
+            const listItems = html.split('\n').filter(line => line.trim().match(/^[\*-]\s/));
+            
+            if (listItems.length > 0) {
+                let listHtml = '';
+                for (const line of listItems) {
+                    // Clean the list marker and trim
+                    let item = line.trim().replace(/^[\*-]\s?/, '');
+                    // Apply bolding to the item text again in case it spans lines
+                    item = item.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    listHtml += `<li>${item}</li>`;
+                }
+                // Wrap in an unordered list with Tailwind styling
+                return `<ul class="list-disc pl-5">${listHtml}</ul>`;
+            }
+
+            // 3. Convert remaining newlines to <br> for simple paragraph breaks
+            return html.replace(/\n/g, '<br>');
+        }
+
+        // Function to safely add a message to the chat history
+        function addMessage(type, content, isHtml = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type === 'user' ? 'user-message' : 'agent-message';
+            
+            if (type === 'agent-result') {
+                messageDiv.className = 'agent-result';
+            }
+
+            if (isHtml) {
+                // CRITICAL FIX: Use the markdownToHtml converter for agent results
+                messageDiv.innerHTML = type === 'agent-result' ? markdownToHtml(content) : content;
+            } else {
+                messageDiv.textContent = content;
+            }
+
+            chatMessages.appendChild(messageDiv);
+            // Scroll to the latest message
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Function to create and show the "Typing..." indicator
+        function showLoading() {
+            const typingIndicator = document.createElement('div');
+            typingIndicator.id = 'typing-indicator';
+            typingIndicator.className = 'agent-message';
+            typingIndicator.textContent = 'Agent is searching for flights...';
+            chatMessages.appendChild(typingIndicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            searchButton.disabled = true;
+            searchButton.textContent = 'Searching...';
+            return typingIndicator;
+        }
+
+        // Function to remove the "Typing..." indicator
+        function removeLoading(indicator) {
+            if (indicator) {
+                indicator.remove();
+            }
+            searchButton.disabled = false;
+            searchButton.textContent = 'Search Flights';
+        }
+
+        // Main form submission handler
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Get form data
+            const origin = document.getElementById('origin').value.toUpperCase();
+            const destination = document.getElementById('destination').value.toUpperCase();
+            const date = document.getElementById('date').value;
+
+            // 1. Display user query
+            const userQueryText = `I need a flight from ${origin} to ${destination} on ${date}.`;
+            addMessage('user', userQueryText);
+
+            // 2. Show loading indicator
+            const loadingIndicator = showLoading();
+
+            try {
+                // Prepare the payload for the n8n webhook
+                const payload = {
+                    origin: origin,
+                    destination: destination,
+                    date: date,
+                    query: userQueryText // Optional: send the full user text
+                };
+
+                // !!! Fetch Call to n8n Webhook !!!
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}. Check your n8n workflow.`);
+                }
+
+                // Assuming n8n returns a JSON object with a 'message' field (from Gemini)
+                const result = await response.json();
+
+                // 3. Remove loading and display the agent's response
+                removeLoading(loadingIndicator);
+
+                // The result from n8n should contain the combined text output from Gemini,
+                // which summarizes the flight data.
+                if (result && result.message) {
+                    // isHtml=true will now correctly trigger the markdownToHtml conversion
+                    addMessage('agent-result', result.message, true);
+                } else {
+                    addMessage('agent', 'I received a successful response, but the data format was unexpected. Please check your n8n workflow output format.', false);
+                    console.error("Unexpected n8n response:", result);
+                }
+
+            } catch (error) {
+                console.error('API Error:', error);
+                removeLoading(loadingIndicator);
+                addMessage('agent', `Sorry, an error occurred while searching. Please ensure your n8n Webhook URL is correct and the workflow is active. Error details: ${error.message}`);
+            }
+        });
+    </script>
+
+</body>
+</html>
